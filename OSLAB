@@ -2961,3 +2961,80 @@ int main() {
     j.EXECUTEUSERPROGRAM();  // Start executing the user program
     return 0;
 }
+
+
+
+
+----------------------------------
+extra program
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <sys/resource.h>
+
+int main() {
+    // Step 1: Fork a child process
+    pid_t pid = fork();
+
+    if (pid == -1) {
+        perror("Fork failed");
+        return 1;
+    }
+
+    // Parent Process
+    if (pid > 0) {
+        printf("Parent Process (PID: %d)\n", getpid());
+        
+        // Get parent process ID
+        printf("Parent's Parent Process ID (PPID): %d\n", getppid());
+
+        // Step 2: Wait for the child process to complete
+        wait(NULL); // Wait for child to terminate
+        printf("Parent: Child process terminated.\n");
+
+        // Step 6: Send a signal to terminate the child (if needed)
+        kill(pid, SIGKILL); // Kill the child (just as an example, child already finished)
+
+        // Step 7: Get and set process priority
+        int priority = getpriority(PRIO_PROCESS, pid);
+        printf("Parent: Current priority of child (PID %d): %d\n", pid, priority);
+        setpriority(PRIO_PROCESS, pid, 10);  // Set lower priority (higher value)
+        priority = getpriority(PRIO_PROCESS, pid);
+        printf("Parent: New priority of child (PID %d): %d\n", pid, priority);
+    } 
+    
+    // Child Process
+    else {
+        printf("Child Process (PID: %d)\n", getpid());
+
+        // Step 3: Use exec() to replace the current process with "ls" command
+        char *args[] = {"ls", "-l", NULL};
+        execvp("ls", args); // This will replace the child process with "ls -l"
+
+        // If exec fails, print an error
+        perror("Exec failed");
+
+        // Step 4: Exit the child process
+        exit(0); // Exit child process
+    }
+
+    // Step 5: Get the process ID and parent process ID
+    pid_t pid_self = getpid();
+    pid_t ppid_self = getppid();
+    printf("Self Process ID (PID): %d\n", pid_self);
+    printf("Self Parent Process ID (PPID): %d\n", ppid_self);
+
+    // Step 8: Get and set UID (example: root is UID 0)
+    pid_t uid = getuid();
+    printf("Current User ID: %d\n", uid);
+
+    // Set new UID if necessary (uncomment if you have necessary permissions)
+    // setuid(new_uid); // You must have appropriate permissions to change UID
+
+    return 0;
+}
+
